@@ -1,8 +1,6 @@
 package de.zebrajaeger.grbl.jogging;
 
 import com.fazecast.jSerialComm.SerialPort;
-import de.zebrajaeger.grbl.jogging.command.Command;
-import de.zebrajaeger.grbl.jogging.command.CommandList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

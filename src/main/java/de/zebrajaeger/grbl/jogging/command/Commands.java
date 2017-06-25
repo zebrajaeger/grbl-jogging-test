@@ -3,7 +3,7 @@ package de.zebrajaeger.grbl.jogging.command;
 public class Commands {
     private static final String[] CMD_SETUP = {
             "$0=5",
-            "$1=25",
+            "$1=255",
             "$2=0",
             "$3=0",
             "$4=1",

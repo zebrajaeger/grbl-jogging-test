@@ -10,9 +10,11 @@ public class GrblEx extends Grbl implements Grbl.Listener {
     private static final Logger LOG = LoggerFactory.getLogger(GrblEx.class);
     private Object cmdLock = new Object();
     private String lastAnswer;
+    private int timeout;
 
-    public GrblEx(SerialPort port) {
+    public GrblEx(SerialPort port, int timeout) {
         super(port);
+        this.timeout = timeout;
         start();
         addListener(this);
     }
@@ -24,13 +26,13 @@ public class GrblEx extends Grbl implements Grbl.Listener {
     }
 
     public void execute(Command command) throws InterruptedException {
-            command.setAnswer(execute(command.getCommand()));
+        command.setAnswer(execute(command.getCommand()));
     }
 
     public String execute(String cmd) throws InterruptedException {
         synchronized (cmdLock) {
             addCommand(cmd);
-            cmdLock.wait();
+            cmdLock.wait(timeout);
             return lastAnswer;
         }
     }

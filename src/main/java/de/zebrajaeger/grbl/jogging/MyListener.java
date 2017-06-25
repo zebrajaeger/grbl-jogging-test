@@ -1,11 +1,19 @@
 package de.zebrajaeger.grbl.jogging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.Timer;
+import java.util.TimerTask;
 
 class MyListener implements MouseMotionListener, MouseListener {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MyListener.class);
+
     enum Direction {
         FORWARD, BACKWARD, ZERO;
 
@@ -14,23 +22,42 @@ class MyListener implements MouseMotionListener, MouseListener {
             if (delta < 0) {
                 result = BACKWARD;
             } else if (delta > 0) {
-                result = BACKWARD;
+                result = FORWARD;
             }
             return result;
         }
     }
 
+    private Timer timer = new Timer("movement timeout timer ");
     private int toMove = 0;
     private boolean requireStop = false;
 
     private Point lastPos = null;
-    private int lastDiffX = 0;
+    private int lastNonZeroDiffX = 0;
+
+    private int movementTimeoutThreshold = 25;
+    private int movementTimeoutCounter = 0;
+
+    public MyListener() {
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (movementTimeoutCounter > movementTimeoutThreshold) {
+                    reset();
+                }
+            }
+        }, 0, 10);
+    }
+
+    private void resetTimeout() {
+        movementTimeoutCounter = 0;
+    }
 
     private void reset() {
         toMove = 0;
         requireStop = true;
         lastPos = null;
-        lastDiffX = 0;
+        lastNonZeroDiffX = 0;
     }
 
     public Move pickMove() {
@@ -42,18 +69,20 @@ class MyListener implements MouseMotionListener, MouseListener {
 
     @Override
     public void mouseDragged(MouseEvent e) {
+        resetTimeout();
         if (lastPos == null) {
-            lastDiffX = 0;
             lastPos = e.getPoint();
             requireStop = false;
 
         } else {
             int dX = (int) (lastPos.getX() - e.getX());
-            Direction dir = Direction.ofDelta(dX);
-            Direction lastDir = Direction.ofDelta(lastDiffX);
+            Direction dirX = Direction.ofDelta(dX);
 
-            if (dir == Direction.FORWARD) {
-                if (lastDir == Direction.BACKWARD) {
+            Direction lastNonZeroDirX = Direction.ofDelta(lastNonZeroDiffX);
+
+            //LOG.warn("{} -> {}", lastNonZeroDirX, dirX);
+            if (dirX == Direction.FORWARD) {
+                if (lastNonZeroDirX == Direction.BACKWARD) {
                     requireStop = true;
                     toMove = dX;
                 } else {
@@ -61,8 +90,8 @@ class MyListener implements MouseMotionListener, MouseListener {
                 }
             }
 
-            if (dir == Direction.BACKWARD) {
-                if (lastDir == Direction.FORWARD) {
+            if (dirX == Direction.BACKWARD) {
+                if (lastNonZeroDirX == Direction.FORWARD) {
                     requireStop = true;
                     toMove = dX;
                 } else {
@@ -70,19 +99,15 @@ class MyListener implements MouseMotionListener, MouseListener {
                 }
             }
 
-//            if (dir == Direction.ZERO) {
-//                requireStop = true;
-//                toMove = 0;
-//            }
-
-            lastDiffX = dX;
+            if (dX != 0) {
+                lastNonZeroDiffX = dX;
+            }
             lastPos = e.getPoint();
         }
     }
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        //LOG.info("MOVE" + System.currentTimeMillis());
     }
 
     @Override
