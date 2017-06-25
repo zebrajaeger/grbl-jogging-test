@@ -17,7 +17,7 @@ class MyListener implements MouseMotionListener, MouseListener {
     enum Direction {
         FORWARD, BACKWARD, ZERO;
 
-        static Direction ofDelta(int delta) {
+        static Direction ofDelta(float delta) {
             Direction result = ZERO;
             if (delta < 0) {
                 result = BACKWARD;
@@ -29,11 +29,11 @@ class MyListener implements MouseMotionListener, MouseListener {
     }
 
     private Timer timer = new Timer("movement timeout timer ");
-    private int toMove = 0;
+    private float toMove = 0;
     private boolean requireStop = false;
 
     private Point lastPos = null;
-    private int lastNonZeroDiffX = 0;
+    private float lastNonZeroDiffX = 0;
 
     private int movementTimeoutThreshold = 25;
     private int movementTimeoutCounter = 0;
@@ -75,12 +75,17 @@ class MyListener implements MouseMotionListener, MouseListener {
             requireStop = false;
 
         } else {
-            int dX = (int) (lastPos.getX() - e.getX());
+            float dX = (int) (lastPos.getX() - e.getX());
             Direction dirX = Direction.ofDelta(dX);
+
+            // snake speed?
+            if(e.isControlDown()){
+                dX /= 10.0f;
+            }
 
             Direction lastNonZeroDirX = Direction.ofDelta(lastNonZeroDiffX);
 
-            //LOG.warn("{} -> {}", lastNonZeroDirX, dirX);
+            //LOG.warn("{} ", dX);
             if (dirX == Direction.FORWARD) {
                 if (lastNonZeroDirX == Direction.BACKWARD) {
                     requireStop = true;

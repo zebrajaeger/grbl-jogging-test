@@ -1,19 +1,19 @@
 package de.zebrajaeger.grbl.jogging;
 
 class Move {
-    private int deltaX;
+    private float deltaX;
     private boolean requireStopX;
 
-    public Move(int deltaX, boolean requireStopX) {
+    public Move(float deltaX, boolean requireStopX) {
         this.deltaX = deltaX;
         this.requireStopX = requireStopX;
     }
 
     public boolean actionRequired() {
-        return deltaX != 0 || requireStopX;
+        return deltaX != 0f || requireStopX;
     }
 
-    public int getDeltaX() {
+    public float getDeltaX() {
         return deltaX;
     }
 
