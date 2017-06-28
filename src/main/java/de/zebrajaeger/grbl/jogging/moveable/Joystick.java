@@ -8,12 +8,10 @@ import java.awt.event.MouseMotionListener;
 
 public class Joystick extends JPanel implements MouseMotionListener, MouseListener, Moveable {
 
-    private Container container;
     private Point currentPos = null;
     private float speedX = 0;
 
     public Joystick(Container container) {
-        this.container = container;
         container.add(this);
         addMouseListener(this);
         addMouseMotionListener(this);
