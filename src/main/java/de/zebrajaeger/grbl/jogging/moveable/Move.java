@@ -1,6 +1,6 @@
-package de.zebrajaeger.grbl.jogging;
+package de.zebrajaeger.grbl.jogging.moveable;
 
-class Move {
+public class Move {
     private float deltaX;
     private boolean requireStopX;
 

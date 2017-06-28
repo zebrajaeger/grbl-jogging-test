@@ -2,6 +2,10 @@ package de.zebrajaeger.grbl.jogging;
 
 import com.fazecast.jSerialComm.SerialPort;
 import de.zebrajaeger.grbl.jogging.command.Commands;
+import de.zebrajaeger.grbl.jogging.moveable.Joystick;
+import de.zebrajaeger.grbl.jogging.moveable.Move;
+import de.zebrajaeger.grbl.jogging.moveable.Moveable;
+import de.zebrajaeger.grbl.jogging.moveable.Touchpad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,17 +51,16 @@ public class App extends JFrame {
         setResizable(false);
         //setAlwaysOnTop(true);
 
-        MyListener l = new MyListener();
-        addMouseMotionListener(l);
-        addMouseListener(l);
+        //Moveable moveable = new Touchpad(this);
+        Moveable moveable = new Joystick(this);
 
         new Thread() {
             @Override
             public void run() {
                 for (; ; ) {
-                    Move move = l.pickMove();
+                    Move move = moveable.pickMove();
                     try {
-                        if (move.actionRequired()) {
+                        if (move!=null && move.actionRequired()) {
 
                             if (move.isRequireStopX()) {
                                 LOG.info("STOP");

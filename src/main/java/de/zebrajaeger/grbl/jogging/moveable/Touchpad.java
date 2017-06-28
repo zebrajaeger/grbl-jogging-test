@@ -1,4 +1,4 @@
-package de.zebrajaeger.grbl.jogging;
+package de.zebrajaeger.grbl.jogging.moveable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,9 +10,10 @@ import java.awt.event.MouseMotionListener;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class MyListener implements MouseMotionListener, MouseListener {
+public class Touchpad implements MouseMotionListener, MouseListener, Moveable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MyListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Touchpad.class);
+    private Component parent;
 
     enum Direction {
         FORWARD, BACKWARD, ZERO;
@@ -38,7 +39,11 @@ class MyListener implements MouseMotionListener, MouseListener {
     private int movementTimeoutThreshold = 25;
     private int movementTimeoutCounter = 0;
 
-    public MyListener() {
+    public Touchpad(Component parent) {
+        this.parent = parent;
+        parent.addMouseListener(this);
+        parent.addMouseMotionListener(this);
+
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
