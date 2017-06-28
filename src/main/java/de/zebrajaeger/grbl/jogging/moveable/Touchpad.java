@@ -84,7 +84,7 @@ public class Touchpad implements MouseMotionListener, MouseListener, Moveable {
             Direction dirX = Direction.ofDelta(dX);
 
             // snake speed?
-            if(e.isControlDown()){
+            if (e.isControlDown()) {
                 dX /= 10.0f;
             }
 

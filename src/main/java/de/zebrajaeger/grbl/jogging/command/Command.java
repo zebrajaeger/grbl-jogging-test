@@ -8,7 +8,7 @@ public class Command {
         this.command = command;
     }
 
-    public boolean isOk(){
+    public boolean isOk() {
         return "ok".equals(answer);
     }
 

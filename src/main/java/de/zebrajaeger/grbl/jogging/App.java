@@ -5,7 +5,6 @@ import de.zebrajaeger.grbl.jogging.command.Commands;
 import de.zebrajaeger.grbl.jogging.moveable.Joystick;
 import de.zebrajaeger.grbl.jogging.moveable.Move;
 import de.zebrajaeger.grbl.jogging.moveable.Moveable;
-import de.zebrajaeger.grbl.jogging.moveable.Touchpad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +59,7 @@ public class App extends JFrame {
                 for (; ; ) {
                     Move move = moveable.pickMove();
                     try {
-                        if (move!=null && move.actionRequired()) {
+                        if (move != null && move.actionRequired()) {
 
                             if (move.isRequireStopX()) {
                                 LOG.info("STOP");

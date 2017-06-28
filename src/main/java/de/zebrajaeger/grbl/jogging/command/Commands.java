@@ -41,15 +41,15 @@ public class Commands {
             "$X"
     };
 
-    public static CommandList getSetupCommands(){
+    public static CommandList getSetupCommands() {
         return new CommandList(CMD_SETUP);
     }
 
-    public static CommandList getInitCommands(){
+    public static CommandList getInitCommands() {
         return new CommandList(CMD_INIT);
     }
 
-    public static CommandList getJogCancelCommands(){
+    public static CommandList getJogCancelCommands() {
         return new CommandList(new String[]{"!~"});
     }
 }

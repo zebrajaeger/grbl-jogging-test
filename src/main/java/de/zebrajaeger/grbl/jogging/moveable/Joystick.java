@@ -22,7 +22,7 @@ public class Joystick extends JPanel implements MouseMotionListener, MouseListen
 
     @Override
     public Move pickMove() {
-        return new Move(speedX, speedX==0);
+        return new Move(speedX, speedX == 0);
     }
 
     @Override
@@ -59,9 +59,9 @@ public class Joystick extends JPanel implements MouseMotionListener, MouseListen
     }
 
     private void setX(int x) {
-        if(x==0){
+        if (x == 0) {
             speedX = 0;
-        }else {
+        } else {
             Insets insets = getInsets();
             Rectangle bounds = getBounds();
 
