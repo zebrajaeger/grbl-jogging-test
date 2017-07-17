@@ -2,7 +2,6 @@ package grbljoggingtest.zebrajaeger.de.grbljoggingtest.grbl;
 
 import android.util.Log;
 
-import grbljoggingtest.zebrajaeger.de.grbljoggingtest.BT;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.command.Command;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.command.CommandList;
 
@@ -13,10 +12,8 @@ public class GrblEx extends Grbl implements Grbl.Listener {
     private String lastAnswer;
     private int timeout;
 
-    public GrblEx(BT bt, int timeout) {
-        super(bt);
+    public GrblEx(int timeout) {
         this.timeout = timeout;
-        start();
         addListener(this);
     }
 

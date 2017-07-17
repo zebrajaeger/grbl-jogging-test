@@ -13,7 +13,6 @@ public class Storage {
     public static final Storage I = new Storage();
     private AppData appData;
 
-
     private SharedPreferences getPreferences(Context con) {
         return PreferenceManager.getDefaultSharedPreferences(con);
     }

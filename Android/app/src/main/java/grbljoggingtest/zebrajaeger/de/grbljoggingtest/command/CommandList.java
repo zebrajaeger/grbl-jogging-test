@@ -6,7 +6,6 @@ public class CommandList {
     private LinkedList<Command> commands = new LinkedList<>();
 
     public CommandList(String[] cmds) {
-        this.commands = commands;
         for (String cmd : cmds) {
             add(new Command(cmd));
         }

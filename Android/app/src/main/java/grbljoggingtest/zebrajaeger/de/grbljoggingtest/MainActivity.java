@@ -1,7 +1,5 @@
 package grbljoggingtest.zebrajaeger.de.grbljoggingtest;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -10,74 +8,61 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.widget.TextView;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.command.Commands;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.grbl.GrblEx;
-import grbljoggingtest.zebrajaeger.de.grbljoggingtest.moveable.Move;
-import grbljoggingtest.zebrajaeger.de.grbljoggingtest.moveable.Moveable;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements BT.ConnectionListener {
 
     private GestureDetectorCompat mDetector;
     private MyGestureListener myGestureListener;
+    private GrblEx grbl;
+    private TextView connectionStatusText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        connectionStatusText = (TextView) findViewById(R.id.connection_status);
+        setConnectionState(null);
         setSupportActionBar(toolbar);
 
+        BT.I.add(this);
+        BT.I.init(this);
         btAutoconnect();
+
         myGestureListener = new MyGestureListener();
         mDetector = new GestureDetectorCompat(this, myGestureListener);
         mDetector.setIsLongpressEnabled(false);
         mDetector.setOnDoubleTapListener(myGestureListener);
 
-        GrblEx grbl = new GrblEx(BT.I, 2000);
-        initGrbl(grbl, myGestureListener);
+        grbl = new GrblEx(2000);
+        new GrblMoveableThread(grbl, myGestureListener).start();
     }
 
-    private void initGrbl(final GrblEx grbl, final Moveable moveable) {
-
-        new Thread(){
-            @Override
-            public void run() {
-                for (; ; ) {
-                    Move move = moveable.pickMove();
-                    try {
-                        if (move != null && move.actionRequired()) {
-
-                            if (move.isRequireStopX()) {
-                                Log.i("GrblLoop", "STOP");
-                                grbl.execute(Commands.getJogCancelCommands());
-                            }
-                            float diff = move.getDeltaX();
-                            if (diff != 0) {
-                                diff /= 10.0f;
-                                grbl.execute("$J=G91 F10000 G20 X" + diff);
-                            }
-                        } else {
-                            // the polling way is easy to implement and this is just a test...
-                            // better: use notify() and wait() so the thread does'nt has to run 100 times per second
-                            Thread.sleep(10);
-                        }
-                    } catch (InterruptedException e) {
-                        interrupt();
-                    }
-                }
+    @Override
+    public void onBtConnectionStateChanged(BT.ConnectionState from, BT.ConnectionState to) {
+        if (to == BT.ConnectionState.CONNECTED) {
+            setConnectionState(BT.I.getCurrentDeviceName());
+            grbl.start(BT.I);
+            try {
+                Thread.sleep(2000);
+                grbl.execute(Commands.getInitCommands());
+            } catch (InterruptedException e) {
+                Log.e("MainActivity", "unable to send initial", e);
             }
-        }.start();
 
-        try {
-            Thread.sleep(2000);
-            grbl.execute(Commands.getInitCommands());
-        } catch (InterruptedException e) {
-            Log.e("GrblLoop", "unable to send initial", e);
+        } else if (to == BT.ConnectionState.DISCONNECTED || to == BT.ConnectionState.FAILED) {
+            try {
+                setConnectionState(null);
+                grbl.stop();
+            } catch (InterruptedException e) {
+                Log.e("MainActivity", "unable to stop grbl", e);
+            }
         }
     }
 
@@ -94,11 +79,19 @@ public class MainActivity extends AppCompatActivity {
         BT.I.refreshDeviceList();
         String btAdapter = appData.getBtAdapter();
         if (BT.I.getSortedDeviceNames().contains(btAdapter)) {
-            if (BT.I.setCurrentDevice(btAdapter)) {
+            if (BT.I.connectTo(btAdapter)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private void setConnectionState(String deviceName){
+        if(StringUtils.isNotBlank(deviceName)){
+            connectionStatusText.setText("not connected");
+        }else{
+            connectionStatusText.setText("connected to " + deviceName);
+        }
     }
 
     @Override
@@ -116,68 +109,18 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            buttonBtSelectDeviceOnClick();
+            String btAdapter = Storage.I.getAppData().getBtAdapter();
+            BT.I.showChooseDialog(this, btAdapter, new BT.AdapterSelectionResult() {
+                @Override
+                public void onBTAdapterSelected(String name) {
+                    Storage.I.getAppData(getApplicationContext()).setBtAdapter(name);
+                    Storage.I.save(getApplicationContext());
+                    BT.I.connectTo(name);
+                }
+            });
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public void buttonBtSelectDeviceOnClick() {
-        BT.I.refreshDeviceList();
-        final String[] names = BT.I.getSortedDeviceNamesAsArray();
-
-        boolean hasDevices = (names.length > 0);
-        final AtomicInteger selected = new AtomicInteger(hasDevices ? 0 : -1);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(hasDevices ? "Select Bluetooth Device" : "No Devices Found");
-        if (hasDevices) {
-
-            // find index of already selected device if exists
-            int checked = 0;
-            String btAdapter = Storage.I.getAppData().getBtAdapter();
-            if (StringUtils.isNotBlank(btAdapter)) {
-                int pos = 0;
-                for (String n : names) {
-                    if (btAdapter.equals(n)) {
-                        checked = pos;
-                    }
-                    ++pos;
-                }
-            }
-
-            // title
-            builder.setTitle("Select Bluetooth Device");
-
-            // devices
-            builder.setSingleChoiceItems(names, checked, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    selected.set(which);
-                }
-            });
-
-            // OK button
-            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    String name = names[selected.get()];
-                    Storage.I.getAppData(getApplicationContext()).setBtAdapter(name);
-                    Storage.I.save(getApplicationContext());
-                    BT.I.setCurrentDevice(name);
-                }
-            });
-
-            // CANCEL button
-            builder.setNegativeButton("Cancel", null);
-        } else {
-
-            // no devices found
-            builder.setTitle("No Devices Found");
-            builder.setPositiveButton("Ok", null);
-        }
-
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
     }
 }

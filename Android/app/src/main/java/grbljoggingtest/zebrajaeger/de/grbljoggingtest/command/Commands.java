@@ -2,10 +2,10 @@ package grbljoggingtest.zebrajaeger.de.grbljoggingtest.command;
 
 public class Commands {
     public static CommandList getInitCommands() {
-        return new CommandList(new String[]{"$X"});
+        return new CommandList(new String[]{"$X\n"});
     }
 
     public static CommandList getJogCancelCommands() {
-        return new CommandList(new String[]{"!~"});
+        return new CommandList(new String[]{"!~\n"});
     }
 }
