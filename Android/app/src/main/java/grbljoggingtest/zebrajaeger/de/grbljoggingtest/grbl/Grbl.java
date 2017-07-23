@@ -11,15 +11,23 @@ import java.util.List;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.Streamable;
 
 public class Grbl {
+    private Listener listener;
     private ResultListener resultListener;
     private CommandSender commandSender;
 
-    public void addListener(Listener listener) {
-        resultListener.addListener(listener);
+    public void setListener(Listener listener) {
+        this.listener = listener;
+        if(resultListener!=null){
+            resultListener.addListener(listener);
+        }
     }
 
-    public void addCommand(String cmd) {
+    public boolean addCommand(String cmd) {
+        if(commandSender==null){
+            return false;
+        }
         commandSender.addCommand(cmd);
+        return true;
     }
 
     public void start(Streamable streamable) {
@@ -28,6 +36,9 @@ public class Grbl {
             throw new IllegalStateException("at least one thread is running");
         } else {
             resultListener = new ResultListener(streamable);
+            if(listener!=null){
+                resultListener.addListener(listener);
+            }
             commandSender = new CommandSender(streamable);
 
             resultListener.start();

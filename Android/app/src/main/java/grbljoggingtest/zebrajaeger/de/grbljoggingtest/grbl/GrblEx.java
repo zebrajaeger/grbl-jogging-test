@@ -5,8 +5,6 @@ import android.util.Log;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.command.Command;
 import grbljoggingtest.zebrajaeger.de.grbljoggingtest.command.CommandList;
 
-;
-
 public class GrblEx extends Grbl implements Grbl.Listener {
     private Object cmdLock = new Object();
     private String lastAnswer;
@@ -14,7 +12,7 @@ public class GrblEx extends Grbl implements Grbl.Listener {
 
     public GrblEx(int timeout) {
         this.timeout = timeout;
-        addListener(this);
+        setListener(this);
     }
 
     public void execute(CommandList list) throws InterruptedException {
@@ -29,9 +27,12 @@ public class GrblEx extends Grbl implements Grbl.Listener {
 
     public String execute(String cmd) throws InterruptedException {
         synchronized (cmdLock) {
-            addCommand(cmd);
-            cmdLock.wait(timeout);
-            return lastAnswer;
+            if(addCommand(cmd)) {
+                cmdLock.wait(timeout);
+                return lastAnswer;
+            }else{
+                return null;
+            }
         }
     }
 

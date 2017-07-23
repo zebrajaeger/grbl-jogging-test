@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Lars Brandt on 18.06.2017.
  */
-public class BT implements Streamable{
+public class BT implements Streamable {
     public static final String LOG_TAG = "BT";
     public static final BT I = new BT();
     private static final UUID SerialPortServiceClass_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -55,38 +55,46 @@ public class BT implements Streamable{
     }
 
     public void init(Context ctx) {
-        bta = BluetoothAdapter.getDefaultAdapter();
+        if (!isInitialized) {
+            Log.i(LOG_TAG, "initialize BT");
+            bta = BluetoothAdapter.getDefaultAdapter();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
+            filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
+            filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
 
-        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-                    Log.i("BTState", "ACTION_ACL_CONNECTED " + device.getName());
+                    if (currentDevice != null && device != null && StringUtils.equals(currentDevice.getAddress(), device.getAddress())){
+                        if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
+                            Log.i("BTState", "ACTION_ACL_CONNECTED " + device.getName());
+                            setConnectionState(ConnectionState.CONNECTED);
 
-                } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                    Log.i("BTState", "ACTION_ACL_DISCONNECTED " + device.getName());
-                    if (currentDevice == null && currentDevice.getAddress().equals(device.getAddress())) {
-                        currentDevice = null;
+                        } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+                            Log.i("BTState", "ACTION_ACL_DISCONNECTED " + device.getName());
+                            setConnectionState(ConnectionState.DISCONNECTED);
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        ctx.registerReceiver(broadcastReceiver, filter);
+            ctx.registerReceiver(broadcastReceiver, filter);
+            isInitialized = true;
+        } else {
+            Log.w(LOG_TAG, "BT already initialized");
+        }
     }
 
     public boolean connectTo(String name) {
         checkInitialization();
         BluetoothDevice dev = devices.get(name);
-        return connectTo(dev);
+        boolean result = connectTo(dev);
+        return result;
     }
 
     public boolean connectTo(BluetoothDevice currentDevice) {
@@ -99,7 +107,6 @@ public class BT implements Streamable{
                 setConnectionState(ConnectionState.CONNECTING);
                 socket = this.currentDevice.createRfcommSocketToServiceRecord(SerialPortServiceClass_UUID);
                 socket.connect();
-                setConnectionState(ConnectionState.CONNECTED);
             } catch (Exception e) {
                 socket = null;
                 this.currentDevice = null;
@@ -108,7 +115,7 @@ public class BT implements Streamable{
             }
         }
 
-        return currentDevice != null;
+        return socket != null && socket.isConnected();
     }
 
     public void disconnect() {
@@ -132,10 +139,10 @@ public class BT implements Streamable{
     }
 
     private void setConnectionState(ConnectionState state) {
-        // TODO notify Listeners
+
         ConnectionState prev = connectionState;
         connectionState = state;
-        for(ConnectionListener l : listeners){
+        for (ConnectionListener l : listeners) {
             l.onBtConnectionStateChanged(prev, state);
         }
     }
@@ -186,7 +193,7 @@ public class BT implements Streamable{
         return currentDevice != null && socket != null && socket.isConnected();
     }
 
-    public void showChooseDialog(final Context ctx, String currentAdapteName, final AdapterSelectionResult selectionResult){
+    public void showChooseDialog(final Context ctx, String currentAdapteName, final AdapterSelectionResult selectionResult) {
         checkInitialization();
         BT.I.refreshDeviceList();
         final String[] names = BT.I.getSortedDeviceNamesAsArray();
@@ -244,7 +251,7 @@ public class BT implements Streamable{
 
     public String getCurrentDeviceName() {
         checkInitialization();
-        return (currentDevice!=null) ? createUniqueName(currentDevice) : null;
+        return (currentDevice != null) ? createUniqueName(currentDevice) : null;
     }
 
     public enum ConnectionState {

@@ -1,5 +1,9 @@
 package grbljoggingtest.zebrajaeger.de.grbljoggingtest;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements BT.ConnectionList
     private MyGestureListener myGestureListener;
     private GrblEx grbl;
     private TextView connectionStatusText;
+    private TextView grblStatusText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,12 +33,9 @@ public class MainActivity extends AppCompatActivity implements BT.ConnectionList
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         connectionStatusText = (TextView) findViewById(R.id.connection_status);
-        setConnectionState(null);
+        grblStatusText = (TextView) findViewById(R.id.grbl_status);
+        setUIConnectionState(null);
         setSupportActionBar(toolbar);
-
-        BT.I.add(this);
-        BT.I.init(this);
-        btAutoconnect();
 
         myGestureListener = new MyGestureListener();
         mDetector = new GestureDetectorCompat(this, myGestureListener);
@@ -41,13 +43,29 @@ public class MainActivity extends AppCompatActivity implements BT.ConnectionList
         mDetector.setOnDoubleTapListener(myGestureListener);
 
         grbl = new GrblEx(2000);
-        new GrblMoveableThread(grbl, myGestureListener).start();
+        new GrblMoveableThread(this, grbl, myGestureListener).start();
+
+        BT.I.add(this);
+        BT.I.init(this);
+        btAutoconnect();
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(GrblMoveableThread.DE_ZEBRAJAEGER_GRBL_BROADCAST_STATUS_REPORT);
+
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                StatusReportResponse statusReportResponse = (StatusReportResponse) intent.getExtras().get("data");
+                setUIGrblState(statusReportResponse);
+            }
+        };
+        registerReceiver(broadcastReceiver, filter);
     }
 
     @Override
     public void onBtConnectionStateChanged(BT.ConnectionState from, BT.ConnectionState to) {
         if (to == BT.ConnectionState.CONNECTED) {
-            setConnectionState(BT.I.getCurrentDeviceName());
+            setUIConnectionState(BT.I.getCurrentDeviceName());
             grbl.start(BT.I);
             try {
                 Thread.sleep(2000);
@@ -58,8 +76,10 @@ public class MainActivity extends AppCompatActivity implements BT.ConnectionList
 
         } else if (to == BT.ConnectionState.DISCONNECTED || to == BT.ConnectionState.FAILED) {
             try {
-                setConnectionState(null);
-                grbl.stop();
+                setUIConnectionState(null);
+                if(grbl!=null) {
+                    grbl.stop();
+                }
             } catch (InterruptedException e) {
                 Log.e("MainActivity", "unable to stop grbl", e);
             }
@@ -79,19 +99,21 @@ public class MainActivity extends AppCompatActivity implements BT.ConnectionList
         BT.I.refreshDeviceList();
         String btAdapter = appData.getBtAdapter();
         if (BT.I.getSortedDeviceNames().contains(btAdapter)) {
-            if (BT.I.connectTo(btAdapter)) {
-                return true;
-            }
+            boolean result = BT.I.connectTo(btAdapter);
+            return result;
         }
         return false;
     }
 
-    private void setConnectionState(String deviceName){
-        if(StringUtils.isNotBlank(deviceName)){
+    private void setUIConnectionState(String deviceName){
+        if(StringUtils.isBlank(deviceName)){
             connectionStatusText.setText("not connected");
         }else{
-            connectionStatusText.setText("connected to " + deviceName);
+            connectionStatusText.setText("connected to '" + deviceName + "'");
         }
+    }
+    private void setUIGrblState(StatusReportResponse status){
+            grblStatusText.setText(status.toString());
     }
 
     @Override

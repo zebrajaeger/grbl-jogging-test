@@ -49,6 +49,15 @@ public class StatusReportResponse implements Serializable{
     private StatusReportResponse() {
     }
 
+    @Override
+    public String toString() {
+        return "StatusReportResponse{" +
+                "state='" + state + '\'' +
+                ", mpos=" + mpos +
+                ", wco=" + wco +
+                '}';
+    }
+
     public static class Pos implements Serializable{
         private float x, y, z;
 
@@ -68,6 +77,15 @@ public class StatusReportResponse implements Serializable{
         }
 
         private Pos() {
+        }
+
+        @Override
+        public String toString() {
+            return "Pos{" +
+                    "x=" + x +
+                    ", y=" + y +
+                    ", z=" + z +
+                    '}';
         }
     }
 

@@ -14,6 +14,7 @@ import grbljoggingtest.zebrajaeger.de.grbljoggingtest.moveable.Moveable;
  */
 public class GrblMoveableThread extends Thread {
 
+    public static final String DE_ZEBRAJAEGER_GRBL_BROADCAST_STATUS_REPORT = "de.zebrajaeger.grbl.broadcast.STATUS_REPORT";
     private final GrblEx grbl;
     private final Moveable moveable;
     private Context ctx;
@@ -35,11 +36,14 @@ public class GrblMoveableThread extends Thread {
                 long now = System.currentTimeMillis();
                 if (nextPosCall <= now) {
                     nextPosCall = now + readPosPeriod;
-                    StatusReportResponse statusReportResponse = StatusReportResponse.of(grbl.execute("?"));
-                    Intent intent = new Intent();
-                    intent.setAction("de.zebrajaeger.grbl.broadcast.STATUS_REPORT");
-                    intent.putExtra("data", statusReportResponse);
-                    ctx.sendBroadcast(intent);
+                    String response = grbl.execute("?");
+                    StatusReportResponse statusReportResponse = StatusReportResponse.of(response);
+                    if(statusReportResponse!=null) {
+                        Intent intent = new Intent();
+                        intent.setAction(DE_ZEBRAJAEGER_GRBL_BROADCAST_STATUS_REPORT);
+                        intent.putExtra("data", statusReportResponse);
+                        ctx.sendBroadcast(intent);
+                    }
                 }
 
                 Move move = moveable.pickMove();
